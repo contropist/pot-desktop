@@ -49,7 +49,7 @@
                 "check_update": "Check Update",
                 "server_port": "Listening Port",
                 "server_port_change": "The listening port has been changed, Please restart the application for the changes to take effect",
-                "app_language": "Application Language",
+                "app_language": "Display Language",
                 "app_theme": "Theme",
                 "app_font": "Font",
                 "app_fallback_font": "Fallback Font",
@@ -70,6 +70,7 @@
                     "system": "System"
                 },
                 "transparent": "Transparent Effect",
+                "dev_mode": "Developer Mode",
                 "proxy": {
                     "title": "Proxy",
                     "host": "Host",
@@ -257,15 +258,6 @@
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
                     "add": "Add Prompt"
                 },
-                "ollama_polish": {
-                    "title": "Ollama Polish"
-                },
-                "ollama_summary": {
-                    "title": "Ollama Summary"
-                },
-                "ollama_custom": {
-                    "title": "Ollama Custom"
-                },
                 "openai": {
                     "title": "OpenAI",
                     "service": "Service Provider",
@@ -278,15 +270,6 @@
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenAI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
                     "add": "Add Prompt"
                 },
-                "openai_summary": {
-                    "title": "OpenAI Summary"
-                },
-                "openai_polish": {
-                    "title": "OpenAI Polish"
-                },
-                "openai_custom": {
-                    "title": "OpenAI Custom"
-                },
                 "geminipro": {
                     "title": "Gemini Pro",
                     "request_path": "Request Path",
@@ -294,15 +277,6 @@
                     "stream": "Stream Mode",
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of Gemini Pro. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
                     "add": "Add Prompt"
-                },
-                "geminipro_summary": {
-                    "title": "Gemini Pro Summary"
-                },
-                "geminipro_polish": {
-                    "title": "Gemini Pro Polish"
-                },
-                "geminipro_custom": {
-                    "title": "Gemini Pro Custom"
                 },
                 "chatglm": {
                     "title": "ChatGLM",
@@ -315,17 +289,11 @@
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
                     "add": "Add Prompt"
                 },
-                "chatglm_summary": {
-                    "title": "ChatGLM Summary"
-                },
-                "chatglm_polish": {
-                    "title": "ChatGLM Polish"
-                },
-                "chatglm_custom": {
-                    "title": "ChatGLM Custom"
-                },
                 "yandex": {
                     "title": "Yandex"
+                },
+                "ecdict": {
+                    "title": "ECDict(Online)"
                 },
                 "transmart": {
                     "title": "TranSmart",

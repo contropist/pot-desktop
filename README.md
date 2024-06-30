@@ -5,7 +5,7 @@
 > 🌈 一个跨平台的划词翻译软件 ([QQ 频道](https://pd.qq.com/s/akns94e1r))
 
 ![License](https://img.shields.io/github/license/pot-app/pot-desktop.svg)
-![Tauri](https://img.shields.io/badge/Tauri-1.5.0-blue?logo=tauri)
+![Tauri](https://img.shields.io/badge/Tauri-1.6.8-blue?logo=tauri)
 ![JavaScript](https://img.shields.io/badge/-JavaScript-yellow?logo=javascript&logoColor=white)
 ![Rust](https://img.shields.io/badge/-Rust-orange?logo=rust&logoColor=white)
 ![Windows](https://img.shields.io/badge/-Windows-blue?logo=windows&logoColor=white)
@@ -16,7 +16,7 @@
 <hr/>
 <div align="center">
 
-<h3>中文 | <a href='./README_EN.md'>English</a></h3>
+<h3>中文 | <a href='./README_EN.md'>English</a> | <a href='./README_KR.md'> 한글 </a></h3>
 
 <table>
 <tr>
@@ -100,7 +100,7 @@
 -   [x] [Yandex](https://translate.yandex.com/)
 -   [x] [Lingva](https://github.com/TheDavidDelta/lingva-translate) ([插件](https://github.com/pot-app/pot-app-translate-plugin-template))
 -   [x] [Tatoeba](https://tatoeba.org/) ([插件](https://github.com/pot-app/pot-app-translate-plugin-tatoeba))
--   [x] [ECDICT](https://github.com/skywind3000/ECDICT) (离线词典 [插件](https://github.com/pot-app/pot-app-translate-plugin-ecdict))
+-   [x] [ECDICT](https://github.com/skywind3000/ECDICT) ([插件](https://github.com/pot-app/pot-app-translate-plugin-ecdict))
 
 更多接口支持见 [插件系统](#插件系统)
 
@@ -423,7 +423,7 @@ Node.js >= 18.0.0
 
 pnpm >= 8.5.0
 
-Rust >= 1.70.0
+Rust >= 1.79.0
 
 ### 开始编译
 

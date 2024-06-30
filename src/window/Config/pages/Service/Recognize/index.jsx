@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useToastStyle } from '../../../../../hooks';
 import SelectPluginModal from '../SelectPluginModal';
 import { osType } from '../../../../../utils/env';
-import { useConfig } from '../../../../../hooks';
+import { useConfig, deleteKey } from '../../../../../hooks';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
@@ -21,8 +21,9 @@ export default function Recognize(props) {
     } = useDisclosure();
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [openConfigName, setOpenConfigName] = useState('system');
-    const [recognizeServiceList, setRecognizeServiceList] = useConfig('recognize_service_list', [
+    const [currentConfigKey, setCurrentConfigKey] = useState('system');
+    // now it's service instance list
+    const [recognizeServiceInstanceList, setRecognizeServiceInstanceList] = useConfig('recognize_service_list', [
         'system',
         'tesseract',
     ]);
@@ -38,24 +39,25 @@ export default function Recognize(props) {
     };
     const onDragEnd = async (result) => {
         if (!result.destination) return;
-        const items = reorder(recognizeServiceList, result.source.index, result.destination.index);
-        setRecognizeServiceList(items);
+        const items = reorder(recognizeServiceInstanceList, result.source.index, result.destination.index);
+        setRecognizeServiceInstanceList(items);
     };
 
-    const deleteService = (name) => {
-        if (recognizeServiceList.length === 1) {
+    const deleteServiceInstance = (instanceKey) => {
+        if (recognizeServiceInstanceList.length === 1) {
             toast.error(t('config.service.least'), { style: toastStyle });
             return;
         } else {
-            setRecognizeServiceList(recognizeServiceList.filter((x) => x !== name));
+            setRecognizeServiceInstanceList(recognizeServiceInstanceList.filter((x) => x !== instanceKey));
+            deleteKey(instanceKey);
         }
     };
-    const updateServiceList = (name) => {
-        if (recognizeServiceList.includes(name)) {
+    const updateServiceInstanceList = (instanceKey) => {
+        if (recognizeServiceInstanceList.includes(instanceKey)) {
             return;
         } else {
-            const newList = [...recognizeServiceList, name];
-            setRecognizeServiceList(newList);
+            const newList = [...recognizeServiceInstanceList, instanceKey];
+            setRecognizeServiceInstanceList(newList);
         }
     };
 
@@ -78,8 +80,8 @@ export default function Recognize(props) {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                             >
-                                {recognizeServiceList !== null &&
-                                    recognizeServiceList.map((x, i) => {
+                                {recognizeServiceInstanceList !== null &&
+                                    recognizeServiceInstanceList.map((x, i) => {
                                         return (
                                             <Draggable
                                                 key={x}
@@ -94,11 +96,11 @@ export default function Recognize(props) {
                                                         >
                                                             <ServiceItem
                                                                 {...provided.dragHandleProps}
-                                                                name={x}
+                                                                serviceInstanceKey={x}
                                                                 key={x}
                                                                 pluginList={pluginList}
-                                                                deleteService={deleteService}
-                                                                setConfigName={setOpenConfigName}
+                                                                deleteServiceInstance={deleteServiceInstance}
+                                                                setCurrentConfigKey={setCurrentConfigKey}
                                                                 onConfigOpen={onConfigOpen}
                                                             />
                                                             <Spacer y={2} />
@@ -132,24 +134,24 @@ export default function Recognize(props) {
             <SelectPluginModal
                 isOpen={isSelectPluginOpen}
                 onOpenChange={onSelectPluginOpenChange}
-                setConfigName={setOpenConfigName}
+                setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
                 pluginType='recognize'
                 pluginList={pluginList}
-                deleteService={deleteService}
+                deleteService={deleteServiceInstance}
             />
             <SelectModal
                 isOpen={isSelectOpen}
                 onOpenChange={onSelectOpenChange}
-                setConfigName={setOpenConfigName}
+                setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
             />
             <ConfigModal
-                name={openConfigName}
+                serviceInstanceKey={currentConfigKey}
                 isOpen={isConfigOpen}
                 pluginList={pluginList}
                 onOpenChange={onConfigOpenChange}
-                updateServiceList={updateServiceList}
+                updateServiceInstanceList={updateServiceInstanceList}
             />
         </>
     );

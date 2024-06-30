@@ -24,7 +24,6 @@ import toast, { Toaster } from 'react-hot-toast';
 import { MdContentCopy } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import Database from 'tauri-plugin-sql-api';
-import { invoke } from '@tauri-apps/api';
 import { GiCycle } from 'react-icons/gi';
 import { useTheme } from 'next-themes';
 import { useAtomValue } from 'jotai';
@@ -36,11 +35,19 @@ import * as builtinCollectionServices from '../../../../services/collection';
 import { sourceLanguageAtom, targetLanguageAtom } from '../LanguageArea';
 import { useConfig, useToastStyle, useVoice } from '../../../../hooks';
 import { sourceTextAtom, detectLanguageAtom } from '../SourceArea';
+import { invoke_plugin } from '../../../../utils/invoke_plugin';
 import * as builtinServices from '../../../../services/translate';
 import * as builtinTtsServices from '../../../../services/tts';
 
 import { store } from '../../../../utils/store';
-import { INSTANCE_NAME_CONFIG_KEY, getDisplayInstanceName, getServiceName, whetherPluginService } from '../../../../utils/service_instance';
+import {
+    INSTANCE_NAME_CONFIG_KEY,
+    ServiceSourceType,
+    getDisplayInstanceName,
+    getServiceName,
+    getServiceSouceType,
+    whetherPluginService,
+} from '../../../../utils/service_instance';
 
 let translateID = [];
 
@@ -49,8 +56,8 @@ export default function TargetArea(props) {
 
     const [currentTranslateServiceInstanceKey, setCurrentTranslateServiceInstanceKey] = useState(name);
     function getInstanceName(instanceKey, serviceNameSupplier) {
-        const instanceConfig = serviceInstanceConfigMap[instanceKey] ?? {}
-        return getDisplayInstanceName(instanceConfig[INSTANCE_NAME_CONFIG_KEY], serviceNameSupplier)
+        const instanceConfig = serviceInstanceConfigMap[instanceKey] ?? {};
+        return getDisplayInstanceName(instanceConfig[INSTANCE_NAME_CONFIG_KEY], serviceNameSupplier);
     }
 
     const [appFontSize] = useConfig('app_font_size', 16);
@@ -100,7 +107,15 @@ export default function TargetArea(props) {
             }
             translate();
         }
-    }, [sourceText, sourceLanguage, targetLanguage, autoCopy, hideWindow, currentTranslateServiceInstanceKey, clipboardMonitor]);
+    }, [
+        sourceText,
+        sourceLanguage,
+        targetLanguage,
+        autoCopy,
+        hideWindow,
+        currentTranslateServiceInstanceKey,
+        clipboardMonitor,
+    ]);
 
     // todo: history panel use service instance key
     const addToHistory = async (text, source, target, serviceInstanceKey, result) => {
@@ -143,7 +158,7 @@ export default function TargetArea(props) {
         let id = nanoid();
         translateID[index] = id;
 
-        const translateServiceName = getServiceName(currentTranslateServiceInstanceKey)
+        const translateServiceName = getServiceName(currentTranslateServiceInstanceKey);
 
         if (whetherPluginService(currentTranslateServiceInstanceKey)) {
             const pluginInfo = pluginList['translate'][translateServiceName];
@@ -156,21 +171,24 @@ export default function TargetArea(props) {
                 setHide(true);
                 const instanceConfig = serviceInstanceConfigMap[currentTranslateServiceInstanceKey];
                 instanceConfig['enable'] = 'true';
-                invoke('invoke_plugin', {
-                    name: translateServiceName,
-                    pluginType: 'translate',
-                    source: sourceText.trim(),
-                    from: pluginInfo.language[sourceLanguage],
-                    to: pluginInfo.language[newTargetLanguage],
-                    lang: detectLanguage,
-                    needs: instanceConfig,
+                const setHideOnce = invokeOnce(setHide);
+                let [func, utils] = await invoke_plugin('translate', translateServiceName);
+                func(sourceText.trim(), pluginInfo.language[sourceLanguage], pluginInfo.language[newTargetLanguage], {
+                    config: instanceConfig,
+                    detect: detectLanguage,
+                    setResult: (v) => {
+                        if (translateID[index] !== id) return;
+                        setResult(v);
+                        setHideOnce(false);
+                    },
+                    utils,
                 }).then(
                     (v) => {
                         if (translateID[index] !== id) return;
                         setResult(typeof v === 'string' ? v.trim() : v);
                         setIsLoading(false);
                         if (v !== '') {
-                            setHide(false);
+                            setHideOnce(false);
                         }
                         if (!historyDisable) {
                             addToHistory(
@@ -186,7 +204,6 @@ export default function TargetArea(props) {
                                 case 'target':
                                     writeText(v).then(() => {
                                         if (hideWindow) {
-                                            0;
                                             sendNotification({ title: t('common.write_clipboard'), body: v });
                                         }
                                     });
@@ -224,7 +241,7 @@ export default function TargetArea(props) {
                 }
                 setIsLoading(true);
                 setHide(true);
-                const instanceConfig = serviceInstanceConfigMap[currentTranslateServiceInstanceKey]
+                const instanceConfig = serviceInstanceConfigMap[currentTranslateServiceInstanceKey];
                 const setHideOnce = invokeOnce(setHide);
                 builtinServices[translateServiceName]
                     .translate(sourceText.trim(), LanguageEnum[sourceLanguage], LanguageEnum[newTargetLanguage], {
@@ -258,7 +275,7 @@ export default function TargetArea(props) {
                                     case 'target':
                                         writeText(v).then(() => {
                                             if (hideWindow) {
-                                                sendNotification({ title: 打破, body: v });
+                                                sendNotification({ title: t('common.write_clipboard'), body: v });
                                             }
                                         });
                                         break;
@@ -301,8 +318,8 @@ export default function TargetArea(props) {
 
     // refresh tts config
     useEffect(() => {
-        if (ttsServiceList && ttsServiceList[0].startsWith('[plugin]')) {
-            readTextFile(`plugins/tts/${ttsServiceList[0]}/info.json`, {
+        if (ttsServiceList && getServiceSouceType(ttsServiceList[0]) === ServiceSourceType.PLUGIN) {
+            readTextFile(`plugins/tts/${getServiceName(ttsServiceList[0])}/info.json`, {
                 dir: BaseDirectory.AppConfig,
             }).then((infoStr) => {
                 setTtsPluginInfo(JSON.parse(infoStr));
@@ -312,27 +329,29 @@ export default function TargetArea(props) {
 
     // handle tts speak
     const handleSpeak = async () => {
-        const ttsServiceName = ttsServiceList[0];
-        if (ttsServiceName.startsWith('[plugin]')) {
-            const config = (await store.get(ttsServiceName)) ?? {};
+        const instanceKey = ttsServiceList[0];
+        if (getServiceSouceType(instanceKey) === ServiceSourceType.PLUGIN) {
+            const pluginConfig = serviceInstanceConfigMap[instanceKey];
             if (!(targetLanguage in ttsPluginInfo.language)) {
                 throw new Error('Language not supported');
             }
-            let data = await invoke('invoke_plugin', {
-                name: ttsServiceName,
-                pluginType: 'tts',
-                source: result,
-                lang: ttsPluginInfo.language[targetLanguage],
-                needs: config,
+            let [func, utils] = await invoke_plugin('tts', getServiceName(instanceKey));
+            let data = await func(result, ttsPluginInfo.language[targetLanguage], {
+                config: pluginConfig,
+                utils,
             });
             speak(data);
         } else {
-            if (!(targetLanguage in builtinTtsServices[ttsServiceName].Language)) {
+            if (!(targetLanguage in builtinTtsServices[getServiceName(instanceKey)].Language)) {
                 throw new Error('Language not supported');
             }
-            let data = await builtinTtsServices[ttsServiceName].tts(
+            const instanceConfig = serviceInstanceConfigMap[instanceKey];
+            let data = await builtinTtsServices[getServiceName(instanceKey)].tts(
                 result,
-                builtinTtsServices[ttsServiceName].Language[targetLanguage]
+                builtinTtsServices[getServiceName(instanceKey)].Language[targetLanguage],
+                {
+                    config: instanceConfig,
+                }
             );
             speak(data);
         }
@@ -351,9 +370,7 @@ export default function TargetArea(props) {
         >
             <Toaster />
             <CardHeader
-                className={
-                    `flex justify-between py-1 px-0 bg-content2 h-[30px] ${hide ? 'rounded-[10px]' : 'rounded-t-[10px]'}`
-                }
+                className={`flex justify-between py-1 px-0 bg-content2 h-[30px] ${hide ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
                 {...drag}
             >
                 {/* current service instance and available service instance to change */}
@@ -364,24 +381,36 @@ export default function TargetArea(props) {
                                 size='sm'
                                 variant='solid'
                                 className='bg-transparent'
-                                startContent={whetherPluginService(currentTranslateServiceInstanceKey) ? (
-                                    <img
-                                        src={pluginList['translate'][getServiceName(currentTranslateServiceInstanceKey)].icon}
-                                        className='h-[20px] my-auto'
-                                    />
-                                ) : (
-                                    <img
-                                        src={builtinServices[getServiceName(currentTranslateServiceInstanceKey)].info.icon}
-                                        className='h-[20px] my-auto'
-                                    />
-                                )
+                                startContent={
+                                    whetherPluginService(currentTranslateServiceInstanceKey) ? (
+                                        <img
+                                            src={
+                                                pluginList['translate'][
+                                                    getServiceName(currentTranslateServiceInstanceKey)
+                                                ].icon
+                                            }
+                                            className='h-[20px] my-auto'
+                                        />
+                                    ) : (
+                                        <img
+                                            src={
+                                                builtinServices[getServiceName(currentTranslateServiceInstanceKey)].info
+                                                    .icon
+                                            }
+                                            className='h-[20px] my-auto'
+                                        />
+                                    )
                                 }
                             >
                                 {whetherPluginService(currentTranslateServiceInstanceKey) ? (
                                     <div className='my-auto'>{`${getInstanceName(currentTranslateServiceInstanceKey, () => pluginList['translate'][getServiceName(currentTranslateServiceInstanceKey)].display)} `}</div>
                                 ) : (
                                     <div className='my-auto'>
-                                        {getInstanceName(currentTranslateServiceInstanceKey, () => t(`services.translate.${getServiceName(currentTranslateServiceInstanceKey)}.title`))}
+                                        {getInstanceName(currentTranslateServiceInstanceKey, () =>
+                                            t(
+                                                `services.translate.${getServiceName(currentTranslateServiceInstanceKey)}.title`
+                                            )
+                                        )}
                                     </div>
                                 )}
                             </Button>
@@ -397,23 +426,28 @@ export default function TargetArea(props) {
                                 return (
                                     <DropdownItem
                                         key={instanceKey}
-                                        startContent={whetherPluginService(instanceKey) ? (
-                                            <img
-                                                src={pluginList['translate'][getServiceName(instanceKey)].icon}
-                                                className='h-[20px] my-auto'
-                                            />
-                                        ) : (
-                                            <img
-                                                src={builtinServices[getServiceName(instanceKey)].info.icon}
-                                                className='h-[20px] my-auto'
-                                            />
-                                        )
+                                        startContent={
+                                            whetherPluginService(instanceKey) ? (
+                                                <img
+                                                    src={pluginList['translate'][getServiceName(instanceKey)].icon}
+                                                    className='h-[20px] my-auto'
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={builtinServices[getServiceName(instanceKey)].info.icon}
+                                                    className='h-[20px] my-auto'
+                                                />
+                                            )
                                         }
                                     >
                                         {whetherPluginService(instanceKey) ? (
                                             <div className='my-auto'>{`${getInstanceName(instanceKey, () => pluginList['translate'][getServiceName(instanceKey)].display)} `}</div>
                                         ) : (
-                                            <div className='my-auto'>{getInstanceName(instanceKey, () => t(`services.translate.${getServiceName(instanceKey)}.title`))}</div>
+                                            <div className='my-auto'>
+                                                {getInstanceName(instanceKey, () =>
+                                                    t(`services.translate.${getServiceName(instanceKey)}.title`)
+                                                )}
+                                            </div>
                                         )}
                                     </DropdownItem>
                                 );
@@ -500,9 +534,9 @@ export default function TargetArea(props) {
                                                             <span key={nanoid()}>
                                                                 {index === 0 ? (
                                                                     <>
-                                                                        <span className={
-                                                                            `text-[${appFontSize - 2}px] text-default-500 mr-[12px]`
-                                                                        }>
+                                                                        <span
+                                                                            className={`text-[${appFontSize - 2}px] text-default-500 mr-[12px]`}
+                                                                        >
                                                                             {explanations['trait']}
                                                                         </span>
                                                                         <span
@@ -636,24 +670,38 @@ export default function TargetArea(props) {
                                             newSourceLanguage = 'auto';
                                         }
                                         if (whetherPluginService(currentTranslateServiceInstanceKey)) {
-                                            const pluginInfo = pluginList['translate'][getServiceName(currentTranslateServiceInstanceKey)];
+                                            const pluginInfo =
+                                                pluginList['translate'][
+                                                    getServiceName(currentTranslateServiceInstanceKey)
+                                                ];
                                             if (
                                                 newSourceLanguage in pluginInfo.language &&
                                                 newTargetLanguage in pluginInfo.language
                                             ) {
                                                 setIsLoading(true);
                                                 setHide(true);
-                                                const instanceConfig = serviceInstanceConfigMap[currentTranslateServiceInstanceKey]
+                                                const instanceConfig =
+                                                    serviceInstanceConfigMap[currentTranslateServiceInstanceKey];
                                                 instanceConfig['enable'] = 'true';
-                                                invoke('invoke_plugin', {
-                                                    name: getServiceName(currentTranslateServiceInstanceKey),
-                                                    pluginType: 'translate',
-                                                    source: result.trim(),
-                                                    from: pluginInfo.language[newSourceLanguage],
-                                                    to: pluginInfo.language[newTargetLanguage],
-                                                    lang: newSourceLanguage,
-                                                    needs: instanceConfig,
-                                                }).then(
+                                                const setHideOnce = invokeOnce(setHide);
+                                                let [func, utils] = await invoke_plugin(
+                                                    'translate',
+                                                    getServiceName(currentTranslateServiceInstanceKey)
+                                                );
+                                                func(
+                                                    result.trim(),
+                                                    pluginInfo.language[newSourceLanguage],
+                                                    pluginInfo.language[newTargetLanguage],
+                                                    {
+                                                        config: instanceConfig,
+                                                        detect: detectLanguage,
+                                                        setResult: (v) => {
+                                                            setResult(v);
+                                                            setHideOnce(false);
+                                                        },
+                                                        utils,
+                                                    }
+                                                ).then(
                                                     (v) => {
                                                         if (v === result) {
                                                             setResult(v + ' ');
@@ -662,7 +710,7 @@ export default function TargetArea(props) {
                                                         }
                                                         setIsLoading(false);
                                                         if (v !== '') {
-                                                            setHide(false);
+                                                            setHideOnce(false);
                                                         }
                                                     },
                                                     (e) => {
@@ -674,14 +722,17 @@ export default function TargetArea(props) {
                                                 setError('Language not supported');
                                             }
                                         } else {
-                                            const LanguageEnum = builtinServices[getServiceName(currentTranslateServiceInstanceKey)].Language;
+                                            const LanguageEnum =
+                                                builtinServices[getServiceName(currentTranslateServiceInstanceKey)]
+                                                    .Language;
                                             if (
                                                 newSourceLanguage in LanguageEnum &&
                                                 newTargetLanguage in LanguageEnum
                                             ) {
                                                 setIsLoading(true);
                                                 setHide(true);
-                                                const instanceConfig = serviceInstanceConfigMap[currentTranslateServiceInstanceKey]
+                                                const instanceConfig =
+                                                    serviceInstanceConfigMap[currentTranslateServiceInstanceKey];
                                                 const setHideOnce = invokeOnce(setHide);
                                                 builtinServices[getServiceName(currentTranslateServiceInstanceKey)]
                                                     .translate(
@@ -741,24 +792,27 @@ export default function TargetArea(props) {
                             </Tooltip>
                             {/* available collection service instance */}
                             {collectionServiceList &&
-                                collectionServiceList.map((collectionServiceName) => {
+                                collectionServiceList.map((collectionServiceInstanceName) => {
                                     return (
                                         <Button
-                                            key={collectionServiceName}
+                                            key={collectionServiceInstanceName}
                                             isIconOnly
                                             variant='light'
                                             size='sm'
                                             onPress={async () => {
-                                                if (collectionServiceName.startsWith('[plugin]')) {
-                                                    const pluginConfig = (await store.get(collectionServiceName)) ?? {};
-                                                    invoke('invoke_plugin', {
-                                                        name: collectionServiceName,
-                                                        pluginType: 'collection',
-                                                        source: sourceText.trim(),
-                                                        target: result.toString(),
-                                                        from: detectLanguage,
-                                                        to: targetLanguage,
-                                                        needs: pluginConfig,
+                                                if (
+                                                    getServiceSouceType(collectionServiceInstanceName) ===
+                                                    ServiceSourceType.PLUGIN
+                                                ) {
+                                                    const pluginConfig =
+                                                        serviceInstanceConfigMap[collectionServiceInstanceName];
+                                                    let [func, utils] = await invoke_plugin(
+                                                        'collection',
+                                                        getServiceName(collectionServiceInstanceName)
+                                                    );
+                                                    func(sourceText.trim(), result.toString(), {
+                                                        config: pluginConfig,
+                                                        utils,
                                                     }).then(
                                                         (_) => {
                                                             toast.success(t('translate.add_collection_success'), {
@@ -770,8 +824,14 @@ export default function TargetArea(props) {
                                                         }
                                                     );
                                                 } else {
-                                                    builtinCollectionServices[collectionServiceName]
-                                                        .collection(sourceText, result)
+                                                    const instanceConfig =
+                                                        serviceInstanceConfigMap[collectionServiceInstanceName];
+                                                    builtinCollectionServices[
+                                                        getServiceName(collectionServiceInstanceName)
+                                                    ]
+                                                        .collection(sourceText, result, {
+                                                            config: instanceConfig,
+                                                        })
                                                         .then(
                                                             (_) => {
                                                                 toast.success(t('translate.add_collection_success'), {
@@ -787,9 +847,14 @@ export default function TargetArea(props) {
                                         >
                                             <img
                                                 src={
-                                                    collectionServiceName.startsWith('[plugin]')
-                                                        ? pluginList['collection'][collectionServiceName].icon
-                                                        : builtinCollectionServices[collectionServiceName].info.icon
+                                                    getServiceSouceType(collectionServiceInstanceName) ===
+                                                    ServiceSourceType.PLUGIN
+                                                        ? pluginList['collection'][
+                                                              getServiceName(collectionServiceInstanceName)
+                                                          ].icon
+                                                        : builtinCollectionServices[
+                                                              getServiceName(collectionServiceInstanceName)
+                                                          ].info.icon
                                                 }
                                                 className='h-[16px] w-[16px]'
                                             />

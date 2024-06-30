@@ -87,7 +87,8 @@
                 },
                 "default_font": "По умолчанию",
                 "app_font": "Шрифт",
-                "app_fallback_font": "Резервный шрифт"
+                "app_fallback_font": "Резервный шрифт",
+                "dev_mode": "Режим разработчика"
             },
             "translate": {
                 "label": "Перевести",
@@ -192,7 +193,7 @@
                 "aliyun": "Aliyun Drive",
                 "logout": "Выйти",
                 "login_success": "Вход выполнен",
-                "aliyun_login_first": "Для входа отсканируйте код"
+                "aliyun_login_first": "Для входа отсканируйте код."
             },
             "about": {
                 "label": "О программе",
@@ -328,27 +329,6 @@
                     "prompt_description": "Указав Промт, вы можете настроить поведение ИИ. $text $from $to $detect будет заменён текстом для перевода, исходным языком, целевым языком и определённым языком.",
                     "chatglm_turbo": "ChatGLM Turbo"
                 },
-                "chatglm_custom": {
-                    "title": "ChatGLM Custom"
-                },
-                "chatglm_polish": {
-                    "title": "ChatGLM Polish"
-                },
-                "chatglm_summary": {
-                    "title": "ChatGLM Summary"
-                },
-                "openai_custom": {
-                    "title": "OpenAI Custom"
-                },
-                "openai_polish": {
-                    "title": "OpenAI Polish"
-                },
-                "openai_summary": {
-                    "title": "OpenAI Summary"
-                },
-                "geminipro_polish": {
-                    "title": "Gemini Pro Polish"
-                },
                 "geminipro": {
                     "add": "Добавить Промт",
                     "api_key": "Api Key",
@@ -356,12 +336,6 @@
                     "prompt_description": "Указав Промт, вы можете настроить поведение Gemini Pro. $text $from $to $detect будет заменён текстом для перевода, исходным языком, целевым языком и определённым языком.",
                     "title": "Gemini Pro",
                     "request_path": "Путь запроса"
-                },
-                "geminipro_custom": {
-                    "title": "Gemini Pro Custom"
-                },
-                "geminipro_summary": {
-                    "title": "Gemini Pro Summary"
                 },
                 "ollama": {
                     "title": "Ollama",
@@ -376,15 +350,6 @@
                     "not_installed": "Эта модель ещё не установлена, нажмите, чтобы загрузить и установить",
                     "stream": "Потоковый режим",
                     "install_ollama_link": "Загрузить Ollama"
-                },
-                "ollama_polish": {
-                    "title": "Ollama Polish"
-                },
-                "ollama_custom": {
-                    "title": "Ollama Custom"
-                },
-                "ollama_summary": {
-                    "title": "Ollama Summary"
                 }
             },
             "recognize": {

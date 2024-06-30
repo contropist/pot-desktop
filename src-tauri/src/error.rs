@@ -24,9 +24,9 @@ pub enum Error {
     #[error(transparent)]
     Image(#[from] image::ImageError),
     #[error(transparent)]
-    Libloading(#[from] libloading::Error),
-    #[error(transparent)]
     Selection(#[from] font_kit::error::SelectionError),
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 }
 
 // we must manually implement serde::Serialize

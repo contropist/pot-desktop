@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useToastStyle } from '../../../../../hooks';
 import SelectPluginModal from '../SelectPluginModal';
 import { osType } from '../../../../../utils/env';
-import { useConfig } from '../../../../../hooks';
+import { useConfig, deleteKey } from '../../../../../hooks';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
@@ -28,6 +28,7 @@ export default function Translate(props) {
         'bing',
         'yandex',
         'google',
+        'ecdict',
     ]);
 
     const { t } = useTranslation();
@@ -51,6 +52,7 @@ export default function Translate(props) {
             return;
         } else {
             setTranslateServiceInstanceList(translateServiceInstanceList.filter((x) => x !== instanceKey));
+            deleteKey(instanceKey);
         }
     };
     const updateServiceInstanceList = (instanceKey) => {
@@ -66,8 +68,9 @@ export default function Translate(props) {
         <>
             <Toaster />
             <Card
-                className={`${osType === 'Linux' ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-120px)]'
-                    } overflow-y-auto p-5 flex justify-between`}
+                className={`${
+                    osType === 'Linux' ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-120px)]'
+                } overflow-y-auto p-5 flex justify-between`}
             >
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable
@@ -134,7 +137,7 @@ export default function Translate(props) {
             <SelectPluginModal
                 isOpen={isSelectPluginOpen}
                 onOpenChange={onSelectPluginOpenChange}
-                setConfigName={setCurrentConfigKey}
+                setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
                 pluginType='translate'
                 pluginList={pluginList}

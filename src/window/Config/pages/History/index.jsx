@@ -8,15 +8,22 @@ import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Pagination } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
 import Database from 'tauri-plugin-sql-api';
 
 import * as builtinCollectionServices from '../../../../services/collection';
+import { invoke_plugin } from '../../../../utils/invoke_plugin';
 import * as builtinServices from '../../../../services/translate';
 import { useConfig, useToastStyle } from '../../../../hooks';
 import { LanguageFlag } from '../../../../utils/language';
 import { store } from '../../../../utils/store';
 import { osType } from '../../../../utils/env';
+import {
+    ServiceSourceType,
+    ServiceType,
+    getServiceName,
+    getServiceSouceType,
+    whetherAvailableService,
+} from '../../../../utils/service_instance';
 
 export default function History() {
     const [collectionServiceList] = useConfig('collection_service_list', []);
@@ -145,58 +152,63 @@ export default function History() {
                         emptyContent={'No History to display.'}
                         items={items}
                     >
-                        {(item) => (
-                            <TableRow key={item.id}>
-                                <TableCell>
-                                    {item.service.startsWith('[plugin]') ? (
-                                        <img
-                                            src={pluginList['translate'][item.service].icon}
-                                            className='h-[18px] w-[18px] my-auto mr-[8px]'
-                                            draggable={false}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={`${builtinServices[item.service].info.icon}`}
-                                            className='h-[18px] w-[18px] my-auto mr-[8px]'
-                                            draggable={false}
-                                        />
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <p
-                                        className={`whitespace-nowrap ${
-                                            osType === 'Linux'
-                                                ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
-                                                : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
-                                        } text-ellipsis overflow-hidden`}
-                                    >
-                                        {item.text}
-                                    </p>
-                                </TableCell>
-                                <TableCell>
-                                    <span className={`w-[30px] fi fi-${LanguageFlag[item.source]}`} />
-                                </TableCell>
-                                <TableCell>
-                                    <span className={`w-[30px] fi fi-${LanguageFlag[item.target]}`} />
-                                </TableCell>
-                                <TableCell>
-                                    <p
-                                        className={`whitespace-nowrap ${
-                                            osType === 'Linux'
-                                                ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
-                                                : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
-                                        } text-ellipsis overflow-hidden`}
-                                    >
-                                        {item.result}
-                                    </p>
-                                </TableCell>
-                                <TableCell>
-                                    <p className='text-center whitespace-nowrap w-[140px]'>
-                                        {formatDate(new Date(item.timestamp))}
-                                    </p>
-                                </TableCell>
-                            </TableRow>
-                        )}
+                        {(item) =>
+                            whetherAvailableService(item.service, {
+                                [ServiceSourceType.BUILDIN]: builtinServices,
+                                [ServiceSourceType.PLUGIN]: pluginList[ServiceType.TRANSLATE],
+                            }) && (
+                                <TableRow key={item.id}>
+                                    <TableCell>
+                                        {getServiceSouceType(item.service) === ServiceSourceType.PLUGIN ? (
+                                            <img
+                                                src={pluginList['translate'][getServiceName(item.service)].icon}
+                                                className='h-[18px] w-[18px] my-auto mr-[8px]'
+                                                draggable={false}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={`${builtinServices[getServiceName(item.service)].info.icon}`}
+                                                className='h-[18px] w-[18px] my-auto mr-[8px]'
+                                                draggable={false}
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <p
+                                            className={`whitespace-nowrap ${
+                                                osType === 'Linux'
+                                                    ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
+                                                    : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
+                                            } text-ellipsis overflow-hidden`}
+                                        >
+                                            {item.text}
+                                        </p>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className={`w-[30px] fi fi-${LanguageFlag[item.source]}`} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className={`w-[30px] fi fi-${LanguageFlag[item.target]}`} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <p
+                                            className={`whitespace-nowrap ${
+                                                osType === 'Linux'
+                                                    ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
+                                                    : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
+                                            } text-ellipsis overflow-hidden`}
+                                        >
+                                            {item.result}
+                                        </p>
+                                    </TableCell>
+                                    <TableCell>
+                                        <p className='text-center whitespace-nowrap w-[140px]'>
+                                            {formatDate(new Date(item.timestamp))}
+                                        </p>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        }
                     </TableBody>
                 </Table>
                 <div className='mt-[8px] flex justify-around'>
@@ -227,15 +239,18 @@ export default function History() {
                                 <>
                                     <ModalHeader>
                                         <div className='flex justify-start'>
-                                            {selectedItem.service.startsWith('[plugin]') ? (
+                                            {getServiceSouceType(selectedItem.service) === ServiceSourceType.PLUGIN ? (
                                                 <img
-                                                    src={pluginList['translate'][selectedItem.service].icon}
+                                                    src={
+                                                        pluginList['translate'][getServiceName(selectedItem.service)]
+                                                            .icon
+                                                    }
                                                     className='h-[24px] w-[24px] my-auto'
                                                     draggable={false}
                                                 />
                                             ) : (
                                                 <img
-                                                    src={`${builtinServices[selectedItem.service].info.icon}`}
+                                                    src={`${builtinServices[getServiceName(selectedItem.service)].info.icon}`}
                                                     className='h-[24px] w-[24px] m-auto mr-[8px]'
                                                     draggable={false}
                                                 />
@@ -268,24 +283,26 @@ export default function History() {
                                         </Button>
                                         <ButtonGroup>
                                             {collectionServiceList &&
-                                                collectionServiceList.map((serviceName) => {
+                                                collectionServiceList.map((instanceKey) => {
                                                     return (
                                                         <Button
-                                                            key={serviceName}
+                                                            key={instanceKey}
                                                             isIconOnly
                                                             variant='light'
                                                             onPress={async () => {
-                                                                if (serviceName.startsWith('[plugin]')) {
+                                                                if (
+                                                                    getServiceSouceType(instanceKey) ===
+                                                                    ServiceSourceType.PLUGIN
+                                                                ) {
                                                                     const pluginConfig =
-                                                                        (await store.get(serviceName)) ?? {};
-                                                                    invoke('invoke_plugin', {
-                                                                        name: serviceName,
-                                                                        pluginType: 'collection',
-                                                                        source: selectedItem.text,
-                                                                        target: selectedItem.result,
-                                                                        from: selectedItem.source,
-                                                                        to: selectedItem.target,
-                                                                        needs: pluginConfig,
+                                                                        (await store.get(instanceKey)) ?? {};
+                                                                    let [func, utils] = await invoke_plugin(
+                                                                        'collection',
+                                                                        getServiceName(instanceKey)
+                                                                    );
+                                                                    func(selectedItem.text, selectedItem.result, {
+                                                                        config: pluginConfig,
+                                                                        utils,
                                                                     }).then(
                                                                         (_) => {
                                                                             toast.success(
@@ -302,10 +319,17 @@ export default function History() {
                                                                         }
                                                                     );
                                                                 } else {
-                                                                    builtinCollectionServices[serviceName]
+                                                                    const instanceConfig =
+                                                                        (await store.get(instanceKey)) ?? {};
+                                                                    builtinCollectionServices[
+                                                                        getServiceName(instanceKey)
+                                                                    ]
                                                                         .collection(
                                                                             selectedItem.text,
-                                                                            selectedItem.result
+                                                                            selectedItem.result,
+                                                                            {
+                                                                                config: instanceConfig,
+                                                                            }
                                                                         )
                                                                         .then(
                                                                             (_) => {
@@ -329,10 +353,14 @@ export default function History() {
                                                         >
                                                             <img
                                                                 src={
-                                                                    serviceName.startsWith('[plugin]')
-                                                                        ? pluginList['collection'][serviceName].icon
-                                                                        : builtinCollectionServices[serviceName].info
-                                                                              .icon
+                                                                    getServiceSouceType(instanceKey) ===
+                                                                    ServiceSourceType.PLUGIN
+                                                                        ? pluginList['collection'][
+                                                                              getServiceName(instanceKey)
+                                                                          ].icon
+                                                                        : builtinCollectionServices[
+                                                                              getServiceName(instanceKey)
+                                                                          ].info.icon
                                                                 }
                                                                 className='h-[24px] w-[24px]'
                                                             />

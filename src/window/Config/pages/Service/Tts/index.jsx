@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useToastStyle } from '../../../../../hooks';
 import SelectPluginModal from '../SelectPluginModal';
 import { osType } from '../../../../../utils/env';
-import { useConfig } from '../../../../../hooks';
+import { useConfig, deleteKey } from '../../../../../hooks';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
@@ -21,8 +21,9 @@ export default function Tts(props) {
     } = useDisclosure();
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [openConfigName, setOpenConfigName] = useState('lingva_tts');
-    const [ttsServiceList, setTtsServiceList] = useConfig('tts_service_list', ['lingva_tts']);
+    const [currentConfigKey, setCurrentConfigKey] = useState('lingva_tts');
+    // now it's service instance list
+    const [ttsServiceInstanceList, setTtsServiceInstanceList] = useConfig('tts_service_list', ['lingva_tts']);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
@@ -35,24 +36,25 @@ export default function Tts(props) {
     };
     const onDragEnd = async (result) => {
         if (!result.destination) return;
-        const items = reorder(ttsServiceList, result.source.index, result.destination.index);
-        setTtsServiceList(items);
+        const items = reorder(ttsServiceInstanceList, result.source.index, result.destination.index);
+        setTtsServiceInstanceList(items);
     };
 
-    const deleteService = (name) => {
-        if (ttsServiceList.length === 1) {
+    const deleteServiceInstance = (instanceKey) => {
+        if (ttsServiceInstanceList.length === 1) {
             toast.error(t('config.service.least'), { style: toastStyle });
             return;
         } else {
-            setTtsServiceList(ttsServiceList.filter((x) => x !== name));
+            setTtsServiceInstanceList(ttsServiceInstanceList.filter((x) => x !== instanceKey));
+            deleteKey(instanceKey);
         }
     };
-    const updateServiceList = (name) => {
-        if (ttsServiceList.includes(name)) {
+    const updateServiceInstanceList = (instanceKey) => {
+        if (ttsServiceInstanceList.includes(instanceKey)) {
             return;
         } else {
-            const newList = [...ttsServiceList, name];
-            setTtsServiceList(newList);
+            const newList = [...ttsServiceInstanceList, instanceKey];
+            setTtsServiceInstanceList(newList);
         }
     };
 
@@ -75,8 +77,8 @@ export default function Tts(props) {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                             >
-                                {ttsServiceList !== null &&
-                                    ttsServiceList.map((x, i) => {
+                                {ttsServiceInstanceList !== null &&
+                                    ttsServiceInstanceList.map((x, i) => {
                                         return (
                                             <Draggable
                                                 key={x}
@@ -91,11 +93,11 @@ export default function Tts(props) {
                                                         >
                                                             <ServiceItem
                                                                 {...provided.dragHandleProps}
-                                                                name={x}
+                                                                serviceInstanceKey={x}
                                                                 key={x}
                                                                 pluginList={pluginList}
-                                                                deleteService={deleteService}
-                                                                setConfigName={setOpenConfigName}
+                                                                deleteServiceInstance={deleteServiceInstance}
+                                                                setCurrentConfigKey={setCurrentConfigKey}
                                                                 onConfigOpen={onConfigOpen}
                                                             />
                                                             <Spacer y={2} />
@@ -129,24 +131,24 @@ export default function Tts(props) {
             <SelectPluginModal
                 isOpen={isSelectPluginOpen}
                 onOpenChange={onSelectPluginOpenChange}
-                setConfigName={setOpenConfigName}
+                setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
                 pluginType='tts'
                 pluginList={pluginList}
-                deleteService={deleteService}
+                deleteService={deleteServiceInstance}
             />
             <SelectModal
                 isOpen={isSelectOpen}
                 onOpenChange={onSelectOpenChange}
-                setConfigName={setOpenConfigName}
+                setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
             />
             <ConfigModal
-                name={openConfigName}
+                serviceInstanceKey={currentConfigKey}
                 isOpen={isConfigOpen}
                 pluginList={pluginList}
                 onOpenChange={onConfigOpenChange}
-                updateServiceList={updateServiceList}
+                updateServiceInstanceList={updateServiceInstanceList}
             />
         </>
     );

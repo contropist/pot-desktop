@@ -5,7 +5,7 @@
 > A cross-platform translator application ([Telegram Group](https://t.me/pot_app))
 
 ![License](https://img.shields.io/github/license/pot-app/pot-desktop.svg)
-![Tauri](https://img.shields.io/badge/Tauri-1.5.0-blue?logo=tauri)
+![Tauri](https://img.shields.io/badge/Tauri-1.6.8-blue?logo=tauri)
 ![JavaScript](https://img.shields.io/badge/-JavaScript-yellow?logo=javascript&logoColor=white)
 ![Rust](https://img.shields.io/badge/-Rust-orange?logo=rust&logoColor=white)
 ![Windows](https://img.shields.io/badge/-Windows-blue?logo=windows&logoColor=white)
@@ -16,7 +16,7 @@
 <hr/>
 <div align="center">
 
-<h3><a href='./README.md'>中文</a> | English</h3>
+<h3><a href='./README.md'>中文</a> | English | <a href='./README_KR.md'> 한글 </a></h3>
 
 <table>
 <tr>
@@ -100,7 +100,7 @@
 -   [x] [Yandex](https://translate.yandex.com/)
 -   [x] [Lingva](https://github.com/TheDavidDelta/lingva-translate) ([Plugin](https://github.com/pot-app/pot-app-translate-plugin-template))
 -   [x] [Tatoeba](https://tatoeba.org/) ([Plugin](https://github.com/pot-app/pot-app-translate-plugin-tatoeba))
--   [x] [ECDICT](https://github.com/skywind3000/ECDICT) (Offline Dictionary [Plugin](https://github.com/pot-app/pot-app-translate-plugin-ecdict))
+-   [x] [ECDICT](https://github.com/skywind3000/ECDICT) ([Plugin](https://github.com/pot-app/pot-app-translate-plugin-ecdict))
 
 More Services see [Plugin System](#plugin-system)
 
@@ -421,7 +421,7 @@ Node.js >= 18.0.0
 
 pnpm >= 8.5.0
 
-Rust >= 1.70.0
+Rust >= 1.79.0
 
 ### Start compilation
 
